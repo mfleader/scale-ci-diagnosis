@@ -126,14 +126,23 @@ if [[ "$PROMETHEUS_CAPTURE" == "true" ]]; then
 	fi
 fi
 
+# if [[ "$OPENSHIFT_MUST_GATHER" == "true"]]; then
+# 	must_gather
+# 	curl $DATA_SERVER --form file@"$OUTPUT_DIR/must-gather-$ts.tar.xz"
+# fi
 
-if [[ "$OPENSHIFT_MUST_GATHER" == "true" ]]; then
-	must_gather
-	curl $DATA_SERVER --form file@"$OUTPUT_DIR/must-gather-$ts.tar.xz"
-fi
+# validate data server string is not empty
+if [[ -n "$DATA_SERVER" ]]; then
+	if [[ "$OPENSHIFT_MUST_GATHER" == "true" && "$STORAGE_MODE" == "bottle" ]]; then
+		must_gather
+		curl $DATA_SERVER --form file@"$OUTPUT_DIR/must-gather-$ts.tar.xz"
+	fi
 
+	if [[ "$PROMETHEUS_CAPTURE" == "true" && "$STORAGE_MODE" == "bottle" ]]; then
+		# tar file has the same name for cases: wal, full
+		curl $DATA_SERVER --form file@"$OUTPUT_DIR/prometheus-$ts.tar.xz"
+	fi
 
-if [[ "$PROMETHEUS_CAPTURE" == "true" && "$STORAGE_MODE" == "bottle" ]]; then
-	# tar file has the same name for cases: wal, full
-	curl $DATA_SERVER --form file@"$OUTPUT_DIR/prometheus-$ts.tar.xz"
+	else 
+		echo "Data server is undefined. It must be defined to post results to it."
 fi
