@@ -112,6 +112,7 @@ function must_gather() {
 	echo "================================================================================="
 	echo "Asssuming the oc client on the host supports collecting must-gather"
 	oc adm must-gather --dest-dir=$OUTPUT_DIR/must-gather-$ts
+	XZ_OPT=--threads=0 tar cJf $OUTPUT_DIR/must-gather-$ts.tar.xz $OUTPUT_DIR/must-gather-$ts
 }
 	
 if [[ "$PROMETHEUS_CAPTURE" == "true" ]]; then
@@ -125,6 +126,14 @@ if [[ "$PROMETHEUS_CAPTURE" == "true" ]]; then
 	fi
 fi
 
+
 if [[ "$OPENSHIFT_MUST_GATHER" == "true" ]]; then
 	must_gather
+	curl $DATA_SERVER --form file@"$OUTPUT_DIR/must-gather-$ts.tar.xz"
+fi
+
+
+if [[ "$PROMETHEUS_CAPTURE" == "true" && "$STORAGE_MODE" == "bottle" ]]; then
+	# tar file has the same name for cases: wal, full
+	curl $DATA_SERVER --form file@"$OUTPUT_DIR/prometheus-$ts.tar.xz"
 fi
