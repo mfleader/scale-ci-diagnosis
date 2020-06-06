@@ -44,10 +44,6 @@ if [[ -z "$OPENSHIFT_MUST_GATHER" ]]; then
 	exit 1
 fi
 
-if [[ -z "$STORAGE_MODE" ]]; then
-	echo "Looks like STORAGE_MODE is not defined, storing the results on local file system"
-fi
-
 # Check for kubeconfig
 if [[ -z $KUBECONFIG ]] && [[ ! -s $HOME/.kube/config ]]; then
     echo "KUBECONFIG var is not defined and cannot find kube config in the home directory, please check"
@@ -81,7 +77,6 @@ function capture_wal() {
 	echo "               copying prometheus wal from $prometheus_pod                       "
 	echo "================================================================================="
 	oc cp $prometheus_namespace/$prometheus_pod:/prometheus/wal -c prometheus $OUTPUT_DIR/wal/
-	echo "creating a tarball of the captured DB at $OUTPUT_DIR"
 	XZ_OPT=--threads=0 tar cJf $OUTPUT_DIR/prometheus-$ts.tar.xz $OUTPUT_DIR/wal
 	if [[ $? -eq 0 ]]; then
 		rm -rf $OUTPUT_DIR/wal
@@ -96,7 +91,6 @@ function capture_full_db() {
 	echo "            copying the entire prometheus DB from $prometheus_pod                "
 	echo "================================================================================="
 	oc cp  $prometheus_namespace/$prometheus_pod:/prometheus/ -c prometheus $OUTPUT_DIR/data/
-	echo "creating a tarball of the captured DB at $OUTPUT_DIR"
 	XZ_OPT=--threads=0 tar cJf $OUTPUT_DIR/prometheus-$ts.tar.xz -C $OUTPUT_DIR/data .
 	if [[ $? -eq 0 ]]; then
 		rm -rf $OUTPUT_DIR/data
@@ -181,15 +175,16 @@ function store() {
 
 	if [[ -z $STORAGE_MODE ]]; then
 		# store it locally, i.e on the jump host itself
+		echo "Looks like STORAGE_MODE is not defined, storing the results on local file system"
 		$1;
 	elif [[ $STORAGE_MODE == pbench ]]; then
 		# store on the pbench server (STORAGE_MODE=pbench)
-		set_pbench;
+		# set the output_dir to pbench results dir
+		OUTPUT_DIR="/var/lib/pbench-agent/$(ls -t /var/lib/pbench-agent/ | grep "pbench-user" | head -1)"/1;
 		$1;
 	elif [[ validate_server_is_up -eq 0 ]]; then
 		# store it on the data server (STORAGE_MODE=http://ec2.0.0.0.0:7070)
-		# post to server if data copy succeeds
-		$1 && post_to_server "$OUTPUT_DIR/$2"
+		$1 && validate_server_is_up && post_to_server "$OUTPUT_DIR/$2"
 	else
 		echo "Invalid storage mode chosen. STORAGE_MODE is $STORAGE_MODE"
 	fi
@@ -204,3 +199,4 @@ fi
 if [[ $OPENSHIFT_MUST_GATHER == "true" ]]; then
 	store must_gather "must-gather-$ts.tar.xz"
 fi
+
