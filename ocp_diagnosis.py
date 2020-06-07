@@ -2,6 +2,7 @@ import os, sys
 import subprocess as sbp
 from pprint import pprint
 import environs
+from openshift.dynamic import DynamicClient
 
 
 
@@ -34,6 +35,25 @@ def validate_kubecfg(env):
         os._exit(1)
 
 
+def validate_oc():
+    if sbp.run(['which', 'oc', '&>/dev/null']).returncode != 0:
+        print('oc client is not installed, please install')
+        os._exit(1)
+    else:
+        print('oc client is present')
+
+
+def capture_wal():
+    pass
+
+
+def capture_full_db():
+    pass
+
+
+def must_gather(env):
+    sbp.run(['oc', 'adm', 'must-gather', '/'.join((env('OUTPUT_DIR')))])
+
 
 def main():
     env = environs.Env()
@@ -41,6 +61,9 @@ def main():
     cfg = parse_env()
     for envvar in cfg.keys():
         validate_var(env, envvar)
+
+    
+    prometheus_pod = sbp.run([''])
     
 
     
