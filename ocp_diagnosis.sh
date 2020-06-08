@@ -72,7 +72,7 @@ ts=$(date +"%Y%m%d-%H%M%S")
 
 # set the output_dir to pbench results dir
 if [[ "$STORAGE_MODE" == "pbench" ]]; then
-	echo "Detected sotrage mode as $STORAGE_MODE"
+	echo "Detected storage mode as $STORAGE_MODE"
 	echo "Assuming that the ocp diagnosis tool is run using pbench-user-benchmark"
 	echo "Fetching the latest pbench results dir"
 	result_dir="/var/lib/pbench-agent/$(ls -t /var/lib/pbench-agent/ | grep "pbench-user" | head -1)"/1/reference-result
