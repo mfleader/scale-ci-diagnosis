@@ -2,8 +2,6 @@ import os, sys
 import subprocess as sbp
 from pprint import pprint
 import environs
-from openshift.dynamic import DynamicClient
-
 
 
 def help():
@@ -29,8 +27,7 @@ def validate_var(env, varname):
 
 def validate_kubecfg(env):
     if not env('KUBECONFIG') \
-        and pathlib.Path(pathlib.Path.home(), '.kube/config') \ 
-            .stat().st_size == 0:
+        and pathlib.Path(pathlib.Path.home(), '.kube/config').stat().st_size == 0:
         print('KUBECONFIG var is not defined and cannot find kube config in the home directory, please check')
         os._exit(1)
 
@@ -56,17 +53,24 @@ def must_gather(env):
 
 
 def main():
+    # setup environment
     env = environs.Env()
     env.read_env(recurse = False, verbose = True)
+
+    # parse provided environment variables
     cfg = parse_env()
+
+    # validate environment variables
     for envvar in cfg.keys():
         validate_var(env, envvar)
 
-    
-    prometheus_pod = sbp.run([''])
-    
 
-    
+    prometheus_namespace = 'openshift-monitoring'
+
+    # 3.6
+    # sbp.run(['oc', 'get', 'pods', '-n', prometheus_namespace], stdout=sbp.PIPE).stdout
+
+
 
 
 
