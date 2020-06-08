@@ -6,11 +6,7 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-python-dotenv = "*"
 environs = "*"
-marshmallow = "*"
-openshift = "*"
-kubernetes = "*"
 
 [requires]
 python_version = "3.8"
