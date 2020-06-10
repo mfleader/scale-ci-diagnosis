@@ -53,7 +53,7 @@ fi
 # Check if oc client is installed
 which oc &>/dev/null
 echo "Checking if oc client is installed"
-if [[ $? -eq 0 ]]; then
+if [[ $? -ne 0 ]]; then
     echo "oc client is not installed, please install"
     exit 1
 else
@@ -179,8 +179,6 @@ function store() {
 		$1;
 	elif [[ $STORAGE_MODE == "pbench" ]]; then
 		# store on the pbench server (STORAGE_MODE=pbench)
-		# set the output_dir to pbench results dir
-		# OUTPUT_DIR="/var/lib/pbench-agent/$(ls -t /var/lib/pbench-agent/ | grep "pbench-user" | head -1)"/1;
 		set_pbench
 		$1;
 	elif [[ validate_server_is_up -eq 0 ]]; then
@@ -191,13 +189,19 @@ function store() {
 	fi
 }
 
+function test_capture() {
+	cp $1 $OUTPUT_DIR
+}
+
 
 if [[ $PROMETHEUS_CAPTURE == "true" ]]; then
-	store prometheus_capture "prometheus-$ts.tar.xz"
+	# store prometheus_capture "prometheus-$ts.tar.xz"
+	store test_capture "1-default.tar.gz"
 fi
 
 
 if [[ $OPENSHIFT_MUST_GATHER == "true" ]]; then
-	store must_gather "must-gather-$ts.tar.xz"
+	# store must_gather "must-gather-$ts.tar.xz"
+	store test_capture "2-default.tar.gz
 fi
 
