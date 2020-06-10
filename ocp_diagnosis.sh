@@ -190,13 +190,16 @@ function store() {
 	fi
 }
 
-
-if [[ $PROMETHEUS_CAPTURE == "true" ]]; then
-	store prometheus_capture "prometheus-$ts.tar.xz"
-fi
+echo $(validate_server_is_up)
 
 
-if [[ $OPENSHIFT_MUST_GATHER == "true" ]]; then
-	store must_gather "must-gather-$ts.tar.xz"
-fi
+
+# if [[ $PROMETHEUS_CAPTURE == "true" ]]; then
+# 	store prometheus_capture "prometheus-$ts.tar.xz"
+# fi
+
+
+# if [[ $OPENSHIFT_MUST_GATHER == "true" ]]; then
+# 	store must_gather "must-gather-$ts.tar.xz"
+# fi
 
