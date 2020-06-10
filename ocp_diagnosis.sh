@@ -117,7 +117,7 @@ function post_to_server() {
 	# parameters
 	# 	1 data filepath
 
-	curl $STORAGE_MODE --form file=@"$1"
+	curl $STORAGE_MODE/api --form file=@"$1"
 	if [[ $? -eq 0 ]]; then
 		rm -rf "$1"
 	fi
