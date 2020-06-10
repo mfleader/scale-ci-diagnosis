@@ -67,7 +67,7 @@ prometheus_pod=$(oc get pods -n $prometheus_namespace | grep -w "Running" | awk 
 ts=$(date +"%Y%m%d-%H%M%S")
 
 # append jumphost name to output directory
-OUTPUT_DIR=$OUTPUT_DIR/ec2-54-244-217-52/
+OUTPUT_DIR=$OUTPUT_DIR/ec2-54-244-217-52
 
 
 function capture_wal() {
@@ -202,6 +202,6 @@ fi
 
 if [[ $OPENSHIFT_MUST_GATHER == "true" ]]; then
 	# store must_gather "must-gather-$ts.tar.xz"
-	store test_capture "2-default.tar.gz
+	store test_capture "2-default.tar.gz"
 fi
 
