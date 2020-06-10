@@ -53,7 +53,7 @@ fi
 # Check if oc client is installed
 which oc &>/dev/null
 echo "Checking if oc client is installed"
-if [[ $? != 0 ]]; then
+if [[ $? -eq 0 ]]; then
     echo "oc client is not installed, please install"
     exit 1
 else
@@ -130,7 +130,7 @@ function validate_server_is_up() {
 	# return
 	# 	http request code
 
-	curl $STORAGE_MODE:7070
+	curl $STORAGE_MODE 1>/dev/null
 	if [[ $? -eq 0 ]]; then
 		echo "Storage chosen is data server."
 	else
@@ -177,10 +177,11 @@ function store() {
 		# store it locally, i.e on the jump host itself
 		echo "Looks like STORAGE_MODE is not defined, storing the results on local file system"
 		$1;
-	elif [[ $STORAGE_MODE == pbench ]]; then
+	elif [[ $STORAGE_MODE == "pbench" ]]; then
 		# store on the pbench server (STORAGE_MODE=pbench)
 		# set the output_dir to pbench results dir
-		OUTPUT_DIR="/var/lib/pbench-agent/$(ls -t /var/lib/pbench-agent/ | grep "pbench-user" | head -1)"/1;
+		# OUTPUT_DIR="/var/lib/pbench-agent/$(ls -t /var/lib/pbench-agent/ | grep "pbench-user" | head -1)"/1;
+		set_pbench
 		$1;
 	elif [[ validate_server_is_up -eq 0 ]]; then
 		# store it on the data server (STORAGE_MODE=http://ec2.0.0.0.0:7070)
@@ -190,16 +191,13 @@ function store() {
 	fi
 }
 
-echo $(validate_server_is_up)
+
+if [[ $PROMETHEUS_CAPTURE == "true" ]]; then
+	store prometheus_capture "prometheus-$ts.tar.xz"
+fi
 
 
-
-# if [[ $PROMETHEUS_CAPTURE == "true" ]]; then
-# 	store prometheus_capture "prometheus-$ts.tar.xz"
-# fi
-
-
-# if [[ $OPENSHIFT_MUST_GATHER == "true" ]]; then
-# 	store must_gather "must-gather-$ts.tar.xz"
-# fi
+if [[ $OPENSHIFT_MUST_GATHER == "true" ]]; then
+	store must_gather "must-gather-$ts.tar.xz"
+fi
 
