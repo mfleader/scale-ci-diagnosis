@@ -2,6 +2,8 @@ import os, sys
 import subprocess as sbp
 from pprint import pprint
 import environs
+import toolz as tz
+import cytoolz as ctz
 
 
 def help():
@@ -16,7 +18,28 @@ def split(s):
 def parse_env():
     with open('.env', 'r', encoding='utf-8') as f:
         return {k:v for k,v in (split(s) for s in f.readlines())}
-        
+
+
+def lines(stdout_str):
+    return re.sub('[\t ]+', ' ', stdout_str) \
+        .replace('\'', '') \
+        .split('\n')
+
+
+def parse_pods(stdout_str):
+    matrix = [
+        line.spilt(' ') for line in lines(stdout_str) if len(line) > 0
+    ]
+    return pd.DataFrame(matrix[1:], columns = matrix[0])
+
+
+def get_prometheus_pod(df, index = -1):
+    return df \
+        [df['NAME'].str.contains('prometheus-k8s')] \
+        .query("STATUS == 'Running'") \
+        .iloc[index] \
+        ['NAME']
+
 
 def validate_var(env, varname):
     if not env(varname):
@@ -38,6 +61,10 @@ def validate_oc():
         os._exit(1)
     else:
         print('oc client is present')
+
+
+def copy_prom(type: str):
+    pass
 
 
 def capture_wal():
@@ -65,10 +92,28 @@ def main():
         validate_var(env, envvar)
 
 
+    validate_kubecfg()
+    validate_oc()
+
     prometheus_namespace = 'openshift-monitoring'
 
     # 3.6
     # sbp.run(['oc', 'get', 'pods', '-n', prometheus_namespace], stdout=sbp.PIPE).stdout
+
+    # 3.8
+    prom_running = sbp.run(['oc', 'get', 'pods', '-n', prometheus_namespace], 
+        capture_output=True,
+        encoding='utf-8').stdout
+    print(prom_running)
+
+    ctz.pipe(
+        prom_running,
+        parse_pods,
+        get_prometheus_pod,
+        print
+    )
+
+
 
 
 
