@@ -1,8 +1,7 @@
-import os, sys
+import os, sys, pathlib
 import subprocess as sbp
 from pprint import pprint
 import environs
-import toolz as tz
 import cytoolz as ctz
 
 
@@ -68,6 +67,15 @@ def copy_prom(type: str):
 
 
 def capture_wal():
+    sbp.run([
+        'oc', 'cp',
+        f"{prometheus_namespace}/{prometheus_pod}:/prometheus/wal", 
+        '-c', 'prometheus', f"{OUTPUT_DIR}/wal/"])
+    
+    # XZ_OPT=--threads=0 tar cJf $OUTPUT_DIR/prometheus-$ts.tar.xz $OUTPUT_DIR/wal
+	# if [[ $? -eq 0 ]]; then
+	# 	rm -rf $OUTPUT_DIR/wal
+	# fi
     pass
 
 
