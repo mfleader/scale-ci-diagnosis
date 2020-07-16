@@ -1,13 +1,21 @@
-import os, sys, pathlib
+import os, sys, pathlib, re
 import subprocess as sbp
 from pprint import pprint
 import environs
-import cytoolz as ctz
+import typer
+
+from enum import Enum
 
 
-def help():
-    print('')
-    print(f'Usage: python {sys.argv[0]}')
+class PrometheusCaptureType(str, Enum):
+    wal = 'wal'
+    full = 'full'
+
+
+class Storage(str, Enum):
+    local =  'local'
+    pbench = 'pbench'
+    data_server = 'data_server'
 
 
 def split(s):
@@ -25,19 +33,19 @@ def lines(stdout_str):
         .split('\n')
 
 
-def parse_pods(stdout_str):
-    matrix = [
-        line.spilt(' ') for line in lines(stdout_str) if len(line) > 0
-    ]
-    return pd.DataFrame(matrix[1:], columns = matrix[0])
+# def parse_pods(stdout_str):
+#     matrix = [
+#         line.spilt(' ') for line in lines(stdout_str) if len(line) > 0
+#     ]
+#     return pd.DataFrame(matrix[1:], columns = matrix[0])
 
 
-def get_prometheus_pod(df, index = -1):
-    return df \
-        [df['NAME'].str.contains('prometheus-k8s')] \
-        .query("STATUS == 'Running'") \
-        .iloc[index] \
-        ['NAME']
+# def get_prometheus_pod(df, index = -1):
+#     return df \
+#         [df['NAME'].str.contains('prometheus-k8s')] \
+#         .query("STATUS == 'Running'") \
+#         .iloc[index] \
+#         ['NAME']
 
 
 def validate_var(env, varname):
@@ -67,15 +75,6 @@ def copy_prom(type: str):
 
 
 def capture_wal():
-    sbp.run([
-        'oc', 'cp',
-        f"{prometheus_namespace}/{prometheus_pod}:/prometheus/wal", 
-        '-c', 'prometheus', f"{OUTPUT_DIR}/wal/"])
-    
-    # XZ_OPT=--threads=0 tar cJf $OUTPUT_DIR/prometheus-$ts.tar.xz $OUTPUT_DIR/wal
-	# if [[ $? -eq 0 ]]; then
-	# 	rm -rf $OUTPUT_DIR/wal
-	# fi
     pass
 
 
@@ -83,43 +82,37 @@ def capture_full_db():
     pass
 
 
-def must_gather(env):
-    sbp.run(['oc', 'adm', 'must-gather', '/'.join((env('OUTPUT_DIR')))])
+def must_gather(output_dir):
+    sbp.run(['oc', 'adm', 'must-gather', output_dir])
 
 
-def main():
-    # setup environment
-    env = environs.Env()
-    env.read_env(recurse = False, verbose = True)
+def main(
+    output_dir: pathlib.Path,
+    prometheus_capture_type: PrometheusCaptureType,
+    prometheus_capture: bool = False,
+    openshift_mustgather: bool = False,
+    storage: Storage = typer.Option(Storage.local)
+):
+    typer.echo(output_dir)
+    typer.echo(prometheus_capture_type)
+    typer.echo(storage)
 
-    # parse provided environment variables
-    cfg = parse_env()
-
-    # validate environment variables
-    for envvar in cfg.keys():
-        validate_var(env, envvar)
-
-
-    validate_kubecfg()
-    validate_oc()
 
     prometheus_namespace = 'openshift-monitoring'
 
-    # 3.6
-    # sbp.run(['oc', 'get', 'pods', '-n', prometheus_namespace], stdout=sbp.PIPE).stdout
 
     # 3.8
-    prom_running = sbp.run(['oc', 'get', 'pods', '-n', prometheus_namespace], 
-        capture_output=True,
-        encoding='utf-8').stdout
-    print(prom_running)
+    # prom_running = sbp.run(['oc', 'get', 'pods', '-n', prometheus_namespace], 
+    #     capture_output=True,
+    #     encoding='utf-8').stdout
+    # print(prom_running)
 
-    ctz.pipe(
-        prom_running,
-        parse_pods,
-        get_prometheus_pod,
-        print
-    )
+    # ctz.pipe(
+    #     prom_running,
+    #     parse_pods,
+    #     get_prometheus_pod,
+    #     print
+    # )
 
 
 
@@ -131,4 +124,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    typer.run(main)
