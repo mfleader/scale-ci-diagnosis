@@ -1,16 +1,19 @@
 import os, sys, re
 import subprocess as sbp
+from datetime import datetime as dt
 from typing import Optional
 from pprint import pprint
 from enum import Enum
 from pathlib import Path
+
 import environs
 import typer
 
 
 class PrometheusCaptureType(str, Enum):
-    wal = 'wal'
-    full = 'full'
+    none = 'none'
+    wal = capture_wal
+    full = capture_full_db
 
 
 class Storage(str, Enum):
@@ -56,19 +59,22 @@ def lines(stdout_str):
 #         typer.Exit()
 
 
-def validate_kubecfg(env):
-    if not env('KUBECONFIG') \
-        and Path(Path.home(), '.kube/config').stat().st_size == 0:
+def validate_kubecfg(kubeconfig):
+    # sbp.check_output to validate output
+    # sbp.check_call to validate exit code
+    if kubeconfig.stat().st_size == 0:
         typer.echo('KUBECONFIG var is not defined and cannot find kube config in the home directory, please check')
         raise typer.Exit(1)
 
 
 def validate_oc():
-    if sbp.run(['which', 'oc', '&>/dev/null']).returncode != 0:
+    try:
+        sbp.check_call(['which', 'oc', '&>/dev/null'])
+    except sbp.CalledProcessError as err:
+        typer.echo(err)
         typer.echo('oc client is not installed, please install')
         raise typer.Exit(1)
-    # else:
-    #     typer.echo('oc client is present')
+    
 
 
 def copy_prom(type: str):
@@ -84,7 +90,24 @@ def capture_full_db():
 
 
 def must_gather(output_dir):
-    sbp.run(['oc', 'adm', 'must-gather', output_dir])
+    try:
+        sbp.check_call(['oc', 'adm', 'must-gather', 
+            f"--dest-dir={output_dir}/must-gather-{dt.utcnow().strftime('%Y%m%d-%H%M%S')}"])
+    except sbp.CalledProcessError as err:
+        typer.echo(err)
+        raise typer.Exit(1)
+
+
+def post_to_server():
+    pass
+
+
+def validate_server_is_up():
+    pass
+
+
+def set_pbench():
+    pass
 
 
 def main(
@@ -92,14 +115,21 @@ def main(
     output_dir: Path,
     prometheus_capture: bool = False,
     openshift_mustgather: bool = False,
-    storage: Storage = typer.Option(Storage.local)
+    storage: Storage = typer.Option(Storage.local),
+    kubeconfig: Path = typer.Option(
+        Path(Path.home(), '.kube/config'),
+        envvar = 'KUBECONFIG',
+        callback = validate_kubecfg,
+        prompt = True)
 ):
     typer.echo(output_dir)
     typer.echo(prometheus_capture_type)
     typer.echo(storage)
     prometheus_namespace = 'openshift-monitoring'
-
-    # check 
+    # validated kubeconfig in header
+    #
+    # validate_oc()
+    # get prometheus pod name
 
 
     # 3.8
@@ -114,6 +144,11 @@ def main(
     #     get_prometheus_pod,
     #     print
     # )
+
+    
+
+    if openshift_mustgather:
+        must_gather(output_dir)
 
 
 
