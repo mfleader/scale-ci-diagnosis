@@ -66,9 +66,6 @@ prometheus_pod=$(oc get pods -n $prometheus_namespace | grep -w "Running" | awk 
 # get the timestamp
 ts=$(date +"%Y%m%d-%H%M%S")
 
-# append jumphost name to output directory
-OUTPUT_DIR=$OUTPUT_DIR/ec2-54-244-217-52
-
 
 function capture_wal() {
 	echo "================================================================================="

@@ -1,10 +1,11 @@
-import os, sys, pathlib, re
+import os, sys, re
 import subprocess as sbp
+from typing import Optional
 from pprint import pprint
+from enum import Enum
+from pathlib import Path
 import environs
 import typer
-
-from enum import Enum
 
 
 class PrometheusCaptureType(str, Enum):
@@ -48,26 +49,26 @@ def lines(stdout_str):
 #         ['NAME']
 
 
-def validate_var(env, varname):
-    if not env(varname):
-        print(f'Looks like {varname} is not defined, please check')
-        help()
-        os._exit(1)
+# def validate_var(env, varname):
+#     if not env(varname):
+#         print(f'Looks like {varname} is not defined, please check')
+#         help()
+#         typer.Exit()
 
 
 def validate_kubecfg(env):
     if not env('KUBECONFIG') \
-        and pathlib.Path(pathlib.Path.home(), '.kube/config').stat().st_size == 0:
-        print('KUBECONFIG var is not defined and cannot find kube config in the home directory, please check')
-        os._exit(1)
+        and Path(Path.home(), '.kube/config').stat().st_size == 0:
+        typer.echo('KUBECONFIG var is not defined and cannot find kube config in the home directory, please check')
+        raise typer.Exit(1)
 
 
 def validate_oc():
     if sbp.run(['which', 'oc', '&>/dev/null']).returncode != 0:
-        print('oc client is not installed, please install')
-        os._exit(1)
-    else:
-        print('oc client is present')
+        typer.echo('oc client is not installed, please install')
+        raise typer.Exit(1)
+    # else:
+    #     typer.echo('oc client is present')
 
 
 def copy_prom(type: str):
@@ -87,8 +88,8 @@ def must_gather(output_dir):
 
 
 def main(
-    output_dir: pathlib.Path,
     prometheus_capture_type: PrometheusCaptureType,
+    output_dir: Path,
     prometheus_capture: bool = False,
     openshift_mustgather: bool = False,
     storage: Storage = typer.Option(Storage.local)
@@ -96,9 +97,9 @@ def main(
     typer.echo(output_dir)
     typer.echo(prometheus_capture_type)
     typer.echo(storage)
-
-
     prometheus_namespace = 'openshift-monitoring'
+
+    # check 
 
 
     # 3.8

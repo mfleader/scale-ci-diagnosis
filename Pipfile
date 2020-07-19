@@ -10,6 +10,7 @@ typer = "*"
 colorama = "*"
 shellingham = "*"
 environs = "*"
+typer-cli = "*"
 
 [requires]
 python_version = "3.8"
