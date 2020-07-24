@@ -203,19 +203,7 @@ def main(
     #     print
     # )
 
-    
-
-    if openshift_mustgather:
-        must_gather(output_dir)
-
-
-
-
-
-
-
-    
 
 
 if __name__ == '__main__':
-    typer.run(main)
+    app()
