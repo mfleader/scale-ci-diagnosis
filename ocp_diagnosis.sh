@@ -66,6 +66,19 @@ prometheus_pod=$(oc get pods -n $prometheus_namespace | grep -w "Running" | awk 
 # get the timestamp
 ts=$(date +"%Y%m%d-%H%M%S")
 
+function cp_archive() {
+	# parameters
+	#	1 src
+	#	2 dest
+	oc cp $1 $2
+	XZ_OPT=--threads=0 tar cJF $2-$ts.tar.xz $2 \
+		&& rm -fr $2
+}
+
+function wal() {
+	
+}
+
 
 function capture_wal() {
 	echo "================================================================================="

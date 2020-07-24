@@ -10,6 +10,9 @@ import environs
 import typer
 
 
+app = typer.Typer()
+
+
 class PrometheusCaptureType(str, Enum):
     none = 'none'
     wal = capture_wal
@@ -59,11 +62,15 @@ def lines(stdout_str):
 #         typer.Exit()
 
 
+def ts():
+    return dt.utcnow().strftime('%Y%m%d-%H%M%S')
+
+
 def validate_kubecfg(kubeconfig):
     # sbp.check_output to validate output
     # sbp.check_call to validate exit code
     if kubeconfig.stat().st_size == 0:
-        typer.echo('KUBECONFIG var is not defined and cannot find kube config in the home directory, please check')
+        typer.echo('KUBECONFIG var is undefined and cannot find kube config in the home directory, please check')
         raise typer.Exit(1)
 
 
@@ -77,22 +84,61 @@ def validate_oc():
     
 
 
-def copy_prom(type: str):
-    pass
+def capture_wal(namespace, pod, output_dir):
+    src = 'wal'
+    dest = src
+    try:
+        sbp.check_call([
+            'oc', 'cp',
+            f'{namespace}/{pod}:/prometheus/{src}',
+            '--container', 'prometheus',
+            f'{output_dir}/{dest}/'
+        ])
+        sbp.check_call([
+            'XZ_OPT=--threads=0',
+            'tar', 'cJf',
+            f'{output_dir}/prometheus-{ts()}.tar.xz',
+            '--directory', f'{output_dir}/{dest}', '.'
+        ])
+        sbp.check_call([
+            'rm', '-fr', f'{output_dir}/{dest}'
+        ])
+    except sbp.CalledProcessError as err:
+        typer.echo(err)
+        raise typer.Exit(1)
 
 
-def capture_wal():
-    pass
 
-
-def capture_full_db():
-    pass
+def capture_full_db(namespace, pod, output_dir):
+    src = ''
+    dest = 'data'
+    try:
+        sbp.check_call([
+            'oc', 'cp',
+            f'{namespace}/{pod}:/prometheus/{src}',
+            '--container', 'prometheus',
+            f'{output_dir}/{dest}'
+        ])
+        sbp.check_call([
+            'XZ_OPT=--threads=0',
+            'tar', 'cJf',
+            f'{output_dir}/prometheus-{ts()}.tar.xz',
+            '--directory', f'{output_dir}/{dest}', '.'
+        ])
+        sbp.check_call([
+            'rm', '-fr', f'{output_dir}/{dest}'
+        ])
+    except sbp.CalledProcessError as err:
+        typer.echo(err)
+        raise typer.Exit(1)
 
 
 def must_gather(output_dir):
     try:
-        sbp.check_call(['oc', 'adm', 'must-gather', 
-            f"--dest-dir={output_dir}/must-gather-{dt.utcnow().strftime('%Y%m%d-%H%M%S')}"])
+        sbp.check_call([
+            'oc', 'adm', 'must-gather', 
+            f"--dest-dir={output_dir}/must-gather-{ts()}"
+        ])
     except sbp.CalledProcessError as err:
         typer.echo(err)
         raise typer.Exit(1)
@@ -110,12 +156,24 @@ def set_pbench():
     pass
 
 
+@app.command()
+def pbench():
+    result_dir = sbp.check_output([
+        """
+        ls -t /var/lib/pbench-agent/ | grep "pbench-user" | head -1
+        """
+    ])
+
+
+@app.command()
+def data_server():
+    pass
+
+
 def main(
-    prometheus_capture_type: PrometheusCaptureType,
     output_dir: Path,
-    prometheus_capture: bool = False,
-    openshift_mustgather: bool = False,
-    storage: Storage = typer.Option(Storage.local),
+    prometheus_capture_type: PrometheusCaptureType,
+    mustgather: bool = False,
     kubeconfig: Path = typer.Option(
         Path(Path.home(), '.kube/config'),
         envvar = 'KUBECONFIG',
@@ -124,8 +182,8 @@ def main(
 ):
     typer.echo(output_dir)
     typer.echo(prometheus_capture_type)
-    typer.echo(storage)
     prometheus_namespace = 'openshift-monitoring'
+    print(prometheus_namespace)
     # validated kubeconfig in header
     #
     # validate_oc()
